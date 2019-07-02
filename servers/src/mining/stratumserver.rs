@@ -341,7 +341,7 @@ impl Handler {
 		let job_template = JobTemplate {
 			height: bh.height,
 			job_id: (self.current_state.read().current_block_versions.len() - 1) as u64,
-			difficulty: self.current_state.read().minimum_share_difficulty,
+			difficulty: self.current_state.read().current_difficulty,
 			pre_pow,
 		};
 		return job_template;
