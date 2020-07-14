@@ -23,6 +23,7 @@ use tokio_util::codec::{Framed, LinesCodec};
 
 use crate::util::RwLock;
 use chrono::prelude::Utc;
+use chrono::TimeZone;
 use serde;
 use serde_json;
 use serde_json::Value;
@@ -156,6 +157,7 @@ struct SubmitParams {
 	nonce: u64,
 	edge_bits: u32,
 	pow: Vec<u64>,
+	timestamp: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -346,7 +348,7 @@ impl Handler {
 		let job_template = JobTemplate {
 			height: bh.height,
 			job_id: (current_state.current_block_versions.len() - 1) as u64,
-			difficulty: current_state.minimum_share_difficulty,
+			difficulty: current_state.current_difficulty,
 			pre_pow,
 		};
 		return job_template;
@@ -387,6 +389,14 @@ impl Handler {
 		b.header.pow.proof.edge_bits = params.edge_bits as u8;
 		b.header.pow.nonce = params.nonce;
 		b.header.pow.proof.nonces = params.pow;
+
+		if let Some(x) = params.timestamp {
+			debug!(
+				"(Server ID: {}) Share at height {}, edge_bits {}, nonce {}, job_id {} submitted with a new timestamp {}",
+				self.id, params.height, params.edge_bits, params.nonce, params.job_id, x,
+			);
+			b.header.timestamp = Utc.timestamp(x, 0);
+		}
 
 		if !b.header.pow.is_primary() && !b.header.pow.is_secondary() {
 			// Return error status
